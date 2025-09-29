@@ -10,7 +10,7 @@ from crawl4ai import (
     LLMExtractionStrategy,
 )
 
-from models.venue import Venue
+from models.Amproducts import products
 from utils.data_utils import is_complete_venue, is_duplicate_venue
 
 
@@ -38,14 +38,14 @@ def get_llm_strategy() -> LLMExtractionStrategy:
     """
     # https://docs.crawl4ai.com/api/strategies/#llmextractionstrategy
     return LLMExtractionStrategy(
-        provider="groq/deepseek-r1-distill-llama-70b",  # Name of the LLM provider
-        api_token=os.getenv("GROQ_API_KEY"),  # API token for authentication
-        schema=Venue.model_json_schema(),  # JSON schema of the data model
+        provider="ollama/llama3.1",  # Name of the LLM provider
+        api_token=os.getenv("DEEPSEEK_API_KEY"),  # API token for authentication
+        schema=products.model_json_schema(),  # JSON schema of the data model
         extraction_type="schema",  # Type of extraction to perform
         instruction=(
-            "Extract all venue objects with 'name', 'location', 'price', 'capacity', "
-            "'rating', 'reviews', and a 1 sentence description of the venue from the "
-            "following content."
+            "Extract all products objects with 'name', 'merchantname', 'discountedprice', 'originalprice', 'rating',"
+            "'numberofreviews', 'freeshipping' from the following content."
+            " and generate a 1 line 'description' for each product."
         ),  # Instructions for the LLM
         input_format="markdown",  # Format of the input content
         verbose=True,  # Enable verbose logging
@@ -78,11 +78,11 @@ async def check_no_results(
     )
 
     if result.success:
-        if "No Results Found" in result.cleaned_html:
+        if "No products found" in result.cleaned_html:
             return True
     else:
         print(
-            f"Error fetching page for 'No Results Found' check: {result.error_message}"
+            f"Error fetching page for 'No products found' check: {result.error_message}"
         )
 
     return False
@@ -116,7 +116,9 @@ async def fetch_and_process_page(
             - List[dict]: A list of processed venues from the page.
             - bool: A flag indicating if the "No Results Found" message was encountered.
     """
-    url = f"{base_url}?page={page_number}"
+    # split = base_url.split('page=')
+    # url = split[0] + 'page=' + str(page_number) + split[1][1:-1] + str(page_number)
+    url = f"{base_url}&page={page_number}"
     print(f"Loading page {page_number}...")
 
     # Check if "No Results Found" message is present
@@ -132,6 +134,8 @@ async def fetch_and_process_page(
             extraction_strategy=llm_strategy,  # Strategy for data extraction
             css_selector=css_selector,  # Target specific content on the page
             session_id=session_id,  # Unique session ID for the crawl
+            scan_full_page=True,  # Scan the entire page content
+            scroll_delay=1.0
         ),
     )
 
@@ -159,6 +163,7 @@ async def fetch_and_process_page(
             venue.pop("error", None)  # Remove the 'error' key if it's False
 
         if not is_complete_venue(venue, required_keys):
+            print(f"Incomplete venue data: {venue}. Skipping.")
             continue  # Skip incomplete venues
 
         if is_duplicate_venue(venue["name"], seen_names):

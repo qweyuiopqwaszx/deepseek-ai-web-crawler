@@ -1,13 +1,14 @@
 # config.py
 
-BASE_URL = "https://www.theknot.com/marketplace/wedding-reception-venues-atlanta-ga"
-CSS_SELECTOR = "[class^='info-container']"
+BASE_URL = "https://www.etsy.com/search?q=nail&ref=pagination"
+CSS_SELECTOR = "[class^='v2-listing-card__info']"
 REQUIRED_KEYS = [
     "name",
-    "price",
-    "location",
-    "capacity",
+    "merchantname",
+    "discountedprice",
+    "originalprice",
     "rating",
-    "reviews",
+    "numberofreviews",
+    "freeshipping",
     "description",
 ]

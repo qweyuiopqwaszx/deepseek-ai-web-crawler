@@ -12,11 +12,12 @@ from utils.scraper_utils import (
     get_browser_config,
     get_llm_strategy,
 )
+import random
 
 load_dotenv()
 
 
-async def crawl_venues():
+async def crawl_venues(max_pages: int = 10):
     """
     Main function to crawl venue data from the website.
     """
@@ -33,7 +34,7 @@ async def crawl_venues():
     # Start the web crawler context
     # https://docs.crawl4ai.com/api/async-webcrawler/#asyncwebcrawler
     async with AsyncWebCrawler(config=browser_config) as crawler:
-        while True:
+        while page_number <= max_pages:
             # Fetch and process data from the current page
             venues, no_results_found = await fetch_and_process_page(
                 crawler,
@@ -59,7 +60,7 @@ async def crawl_venues():
             page_number += 1  # Move to the next page
 
             # Pause between requests to be polite and avoid rate limits
-            await asyncio.sleep(2)  # Adjust sleep time as needed
+            await asyncio.sleep(random.uniform(1, 2))  # Adjust sleep time as needed
 
     # Save the collected venues to a CSV file
     if all_venues:
@@ -76,7 +77,7 @@ async def main():
     """
     Entry point of the script.
     """
-    await crawl_venues()
+    await crawl_venues(3)
 
 
 if __name__ == "__main__":
